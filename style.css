@@ -1,0 +1,168 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --blue:   #3b82f6;
+  --green:  #22c55e;
+  --orange: #f97316;
+  --purple: #a855f7;
+  --bg:     #f1f5f9;
+  --card:   #ffffff;
+  --text:   #1e293b;
+  --muted:  #64748b;
+  --border: #e2e8f0;
+  --radius: 12px;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* Header */
+header {
+  background: #1e293b;
+  color: #fff;
+  padding: 16px 32px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+header h1 { font-size: 1.4rem; font-weight: 700; }
+.subtitle { font-size: 0.8rem; color: #94a3b8; margin-top: 2px; }
+.header-actions { display: flex; gap: 10px; align-items: center; }
+
+.btn-primary, .btn-secondary {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  border: none;
+  transition: opacity 0.15s;
+}
+.btn-primary:hover, .btn-secondary:hover { opacity: 0.85; }
+.btn-primary  { background: var(--blue); color: #fff; }
+.btn-secondary { background: #334155; color: #e2e8f0; }
+
+/* Main */
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+/* Loading */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 80px 0;
+  color: var(--muted);
+}
+.spinner {
+  width: 40px; height: 40px;
+  border: 4px solid var(--border);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.error-state {
+  text-align: center;
+  padding: 60px 0;
+  color: #ef4444;
+  font-size: 1rem;
+}
+.error-state button {
+  margin-left: 10px;
+  color: var(--blue);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 1rem;
+}
+
+.hidden { display: none !important; }
+
+/* Cards */
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+/* Summary Grid */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.summary-card {
+  border-top: 4px solid transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.accent-blue   { border-color: var(--blue); }
+.accent-green  { border-color: var(--green); }
+.accent-orange { border-color: var(--orange); }
+.accent-purple { border-color: var(--purple); }
+
+.card-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+.card-value { font-size: 1.9rem; font-weight: 700; color: var(--text); }
+.card-sub   { font-size: 0.78rem; color: var(--muted); }
+
+/* Charts */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.chart-card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 16px; }
+.chart-card canvas { max-height: 260px; }
+
+/* Tables */
+.tables-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+.table-card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 16px; }
+table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+th {
+  text-align: left;
+  padding: 8px 10px;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+td { padding: 10px 10px; border-bottom: 1px solid var(--border); }
+tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: #f8fafc; }
+td:not(:first-child), th:not(:first-child) { text-align: right; }
+
+tfoot tr { font-weight: 700; background: var(--bg); }
+tfoot td { padding: 10px; border-top: 2px solid var(--border); }
+
+.positive { color: var(--green); }
+.negative { color: var(--orange); }
