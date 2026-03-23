@@ -23,7 +23,47 @@ app.use(cors());
 app.use(express.json());
 
 // ── Health check ──────────────────────────────────────────────
-app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+app.get('/health', async (req, res) => {
+  const db     = require('./db');
+  let dbOk     = false;
+  let dbDetail = {};
+
+  try {
+    const [[row]] = await db.query('SELECT VERSION() AS version');
+    dbOk     = true;
+    dbDetail = { status: 'connected', version: row.version };
+  } catch (err) {
+    dbDetail = {
+      status: 'disconnected',
+      code:   err.code,
+      hint:   err.code === 'ECONNREFUSED'
+        ? 'MySQL is not running'
+        : err.code === 'ER_ACCESS_DENIED_ERROR'
+        ? 'Wrong DB credentials in .env'
+        : err.code === 'ER_BAD_DB_ERROR'
+        ? `Database "${process.env.DB_NAME || 'expense_tracker'}" does not exist`
+        : err.message,
+    };
+  }
+
+  const status = dbOk ? 'ok' : 'degraded';
+  res.status(dbOk ? 200 : 503).json({
+    status,
+    timestamp: new Date().toISOString(),
+    database: {
+      ...dbDetail,
+      host: `${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 3306}`,
+      name: process.env.DB_NAME || 'expense_tracker',
+    },
+    env: {
+      DB_HOST:     process.env.DB_HOST     || '(default: localhost)',
+      DB_PORT:     process.env.DB_PORT     || '(default: 3306)',
+      DB_USER:     process.env.DB_USER     || '(default: root)',
+      DB_PASSWORD: process.env.DB_PASSWORD ? '(set)' : '(not set)',
+      DB_NAME:     process.env.DB_NAME     || '(default: expense_tracker)',
+    },
+  });
+});
 
 // ── API v1 routes ─────────────────────────────────────────────
 const v1 = express.Router();
