@@ -1,0 +1,1156 @@
+openapi: 3.0.3
+
+info:
+  title: Expense Tracker API
+  description: |
+    REST API for the Expense Tracker application.
+    Manages financial accounts, expense sections, categories, and individual expense entries
+    sourced from the Google Sheet (18Ein8ZziNlcmzhPlcslkAqcOrgiXrw8vECuM4DHG6yQ).
+  version: 1.0.0
+  contact:
+    name: Expense Tracker Support
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development
+  - url: https://api.expensetracker.io/v1
+    description: Production
+
+tags:
+  - name: Accounts
+    description: Financial institutions and their balances
+  - name: Sections
+    description: Top-level expense groupings (US, Gobi)
+  - name: Categories
+    description: Expense line items within a section
+  - name: Expenses
+    description: Individual expense amount entries
+  - name: Summary
+    description: Aggregated reports and dashboards
+
+# ─────────────────────────────────────────────────────────────
+#  PATHS
+# ─────────────────────────────────────────────────────────────
+paths:
+
+  # ── ACCOUNTS ──────────────────────────────────────────────
+  /accounts:
+    get:
+      tags: [Accounts]
+      summary: List all accounts
+      operationId: listAccounts
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: Paginated list of accounts
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Account'
+              example:
+                page: 1
+                limit: 20
+                total: 4
+                data:
+                  - id: 1
+                    name: Wells
+                    balance: 900000.00
+                    currency: USD
+                    notes: null
+                    created_at: "2025-01-01T00:00:00Z"
+                    updated_at: "2025-01-01T00:00:00Z"
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    post:
+      tags: [Accounts]
+      summary: Create a new account
+      operationId: createAccount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountInput'
+            example:
+              name: Chase
+              balance: 50000.00
+              currency: USD
+              notes: "Business checking account"
+      responses:
+        '201':
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /accounts/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags: [Accounts]
+      summary: Get an account by ID
+      operationId: getAccount
+      responses:
+        '200':
+          description: Account details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    put:
+      tags: [Accounts]
+      summary: Update an account
+      operationId: updateAccount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountInput'
+      responses:
+        '200':
+          description: Updated account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    patch:
+      tags: [Accounts]
+      summary: Partially update an account (e.g. balance only)
+      operationId: patchAccount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountPatch'
+            example:
+              balance: 950000.00
+      responses:
+        '200':
+          description: Updated account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    delete:
+      tags: [Accounts]
+      summary: Delete an account
+      operationId: deleteAccount
+      responses:
+        '204':
+          description: Account deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  # ── SECTIONS ──────────────────────────────────────────────
+  /sections:
+    get:
+      tags: [Sections]
+      summary: List all expense sections
+      operationId: listSections
+      responses:
+        '200':
+          description: List of expense sections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Section'
+              example:
+                - id: 1
+                  name: US
+                  description: Recurring monthly expenses in the United States
+                  created_at: "2025-01-01T00:00:00Z"
+                - id: 2
+                  name: Gobi
+                  description: Location-specific expenses for Gobi
+                  created_at: "2025-01-01T00:00:00Z"
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    post:
+      tags: [Sections]
+      summary: Create a new expense section
+      operationId: createSection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SectionInput'
+            example:
+              name: Europe
+              description: European travel and living expenses
+      responses:
+        '201':
+          description: Section created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Section'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /sections/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags: [Sections]
+      summary: Get a section by ID
+      operationId: getSection
+      responses:
+        '200':
+          description: Section details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Section'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Sections]
+      summary: Update a section
+      operationId: updateSection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SectionInput'
+      responses:
+        '200':
+          description: Updated section
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Section'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Sections]
+      summary: Delete a section
+      operationId: deleteSection
+      responses:
+        '204':
+          description: Section deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Cannot delete — section has categories
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── CATEGORIES ────────────────────────────────────────────
+  /sections/{id}/categories:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags: [Categories]
+      summary: List categories for a section
+      operationId: listCategoriesBySection
+      parameters:
+        - name: frequency
+          in: query
+          schema:
+            $ref: '#/components/schemas/Frequency'
+          description: Filter by frequency
+      responses:
+        '200':
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+              example:
+                - id: 1
+                  section_id: 1
+                  name: Health Insurance
+                  frequency: monthly
+                  notes: null
+                  created_at: "2025-01-01T00:00:00Z"
+                  updated_at: "2025-01-01T00:00:00Z"
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    post:
+      tags: [Categories]
+      summary: Create a category in a section
+      operationId: createCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryInput'
+            example:
+              name: Gym Membership
+              frequency: monthly
+              notes: "Annual contract paid monthly"
+      responses:
+        '201':
+          description: Category created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /categories:
+    get:
+      tags: [Categories]
+      summary: List all categories (across all sections)
+      operationId: listAllCategories
+      parameters:
+        - name: section_id
+          in: query
+          schema:
+            type: integer
+          description: Filter by section
+        - name: frequency
+          in: query
+          schema:
+            $ref: '#/components/schemas/Frequency'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: Paginated list of categories
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Category'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /categories/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags: [Categories]
+      summary: Get a category by ID
+      operationId: getCategory
+      responses:
+        '200':
+          description: Category details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Categories]
+      summary: Update a category
+      operationId: updateCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryInput'
+      responses:
+        '200':
+          description: Updated category
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Categories]
+      summary: Delete a category
+      operationId: deleteCategory
+      responses:
+        '204':
+          description: Category deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Cannot delete — category has expense entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # ── EXPENSES ──────────────────────────────────────────────
+  /expenses:
+    get:
+      tags: [Expenses]
+      summary: List all expense entries
+      operationId: listExpenses
+      parameters:
+        - name: category_id
+          in: query
+          schema:
+            type: integer
+          description: Filter by category
+        - name: section_id
+          in: query
+          schema:
+            type: integer
+          description: Filter by section
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+          description: "Start date filter (e.g. 2025-01-01)"
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+          description: "End date filter (e.g. 2025-12-31)"
+        - name: currency
+          in: query
+          schema:
+            type: string
+            example: USD
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [date_asc, date_desc, amount_asc, amount_desc]
+            default: date_desc
+      responses:
+        '200':
+          description: Paginated list of expense entries
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Expense'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    post:
+      tags: [Expenses]
+      summary: Log a new expense entry
+      operationId: createExpense
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpenseInput'
+            example:
+              category_id: 1
+              amount: 3000.00
+              currency: USD
+              expense_date: "2025-03-01"
+              notes: "March health insurance premium"
+      responses:
+        '201':
+          description: Expense created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /expenses/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags: [Expenses]
+      summary: Get an expense entry by ID
+      operationId: getExpense
+      responses:
+        '200':
+          description: Expense entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Expenses]
+      summary: Update an expense entry
+      operationId: updateExpense
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpenseInput'
+      responses:
+        '200':
+          description: Updated expense
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags: [Expenses]
+      summary: Partially update an expense (e.g. amount or notes)
+      operationId: patchExpense
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExpensePatch'
+      responses:
+        '200':
+          description: Updated expense
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Expense'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Expenses]
+      summary: Delete an expense entry
+      operationId: deleteExpense
+      responses:
+        '204':
+          description: Expense deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── SUMMARY / REPORTS ────────────────────────────────────
+  /summary/dashboard:
+    get:
+      tags: [Summary]
+      summary: Full dashboard snapshot
+      operationId: getDashboard
+      description: Returns total assets, monthly/annual expense totals, and per-section breakdowns in one call.
+      responses:
+        '200':
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+              example:
+                total_assets: 2532000.00
+                account_count: 4
+                us_monthly_total: 6250.00
+                us_annual_total: 75000.00
+                gobi_total: 97555.56
+                sections:
+                  - section: US
+                    monthly_total: 6250.00
+                    annual_total: 75000.00
+                    categories:
+                      - category: Health Insurance
+                        monthly_amount: 3000.00
+                        annual_amount: 36000.00
+                      - category: Cellphone
+                        monthly_amount: 150.00
+                        annual_amount: 1800.00
+                  - section: Gobi
+                    monthly_total: 2000.00
+                    one_time_total: 95555.56
+                    categories:
+                      - category: Renovation
+                        amount: 27777.78
+                        frequency: one-time
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /summary/accounts:
+    get:
+      tags: [Summary]
+      summary: Account balance summary
+      operationId: getAccountSummary
+      responses:
+        '200':
+          description: Aggregated account data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountSummary'
+              example:
+                total_assets: 2532000.00
+                currency: USD
+                account_count: 4
+                accounts:
+                  - name: Wells
+                    balance: 900000.00
+                    percentage: 35.5
+                  - name: JP
+                    balance: 1160000.00
+                    percentage: 45.8
+
+  /summary/expenses:
+    get:
+      tags: [Summary]
+      summary: Expense totals by section and frequency
+      operationId: getExpenseSummary
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Expense summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExpenseSummary'
+
+  /summary/expenses/monthly:
+    get:
+      tags: [Summary]
+      summary: Monthly expense trend
+      operationId: getMonthlyTrend
+      parameters:
+        - name: months
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 24
+            default: 12
+          description: Number of past months to return
+      responses:
+        '200':
+          description: Monthly totals per section
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MonthlyTrend'
+
+
+# ─────────────────────────────────────────────────────────────
+#  COMPONENTS
+# ─────────────────────────────────────────────────────────────
+components:
+
+  # ── PARAMETERS ──────────────────────────────────────────
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+      description: Resource ID
+
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: Page number
+
+    LimitParam:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      description: Items per page
+
+  # ── SCHEMAS ─────────────────────────────────────────────
+  schemas:
+
+    # --- Shared ---
+    Frequency:
+      type: string
+      enum: [monthly, annual, one-time, weekly]
+
+    Timestamps:
+      type: object
+      properties:
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+
+    PaginatedResponse:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        data:
+          type: array
+          items: {}
+
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: NOT_FOUND
+        message:
+          type: string
+          example: The requested resource was not found.
+        details:
+          type: object
+          additionalProperties: true
+
+    # --- Account ---
+    Account:
+      allOf:
+        - type: object
+          required: [id, name, balance, currency]
+          properties:
+            id:
+              type: integer
+              readOnly: true
+            name:
+              type: string
+              example: Wells
+            balance:
+              type: number
+              format: double
+              example: 900000.00
+            currency:
+              type: string
+              example: USD
+            notes:
+              type: string
+              nullable: true
+        - $ref: '#/components/schemas/Timestamps'
+
+    AccountInput:
+      type: object
+      required: [name, balance]
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          example: Wells
+        balance:
+          type: number
+          format: double
+          minimum: 0
+          example: 900000.00
+        currency:
+          type: string
+          default: USD
+          maxLength: 3
+        notes:
+          type: string
+          nullable: true
+
+    AccountPatch:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        balance:
+          type: number
+          format: double
+          minimum: 0
+        currency:
+          type: string
+          maxLength: 3
+        notes:
+          type: string
+          nullable: true
+
+    # --- Section ---
+    Section:
+      allOf:
+        - type: object
+          required: [id, name]
+          properties:
+            id:
+              type: integer
+              readOnly: true
+            name:
+              type: string
+              example: US
+            description:
+              type: string
+              nullable: true
+        - type: object
+          properties:
+            created_at:
+              type: string
+              format: date-time
+              readOnly: true
+
+    SectionInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          nullable: true
+
+    # --- Category ---
+    Category:
+      allOf:
+        - type: object
+          required: [id, section_id, name, frequency]
+          properties:
+            id:
+              type: integer
+              readOnly: true
+            section_id:
+              type: integer
+            name:
+              type: string
+              example: Health Insurance
+            frequency:
+              $ref: '#/components/schemas/Frequency'
+            notes:
+              type: string
+              nullable: true
+        - $ref: '#/components/schemas/Timestamps'
+
+    CategoryInput:
+      type: object
+      required: [name, frequency]
+      properties:
+        name:
+          type: string
+          maxLength: 150
+          example: Health Insurance
+        frequency:
+          $ref: '#/components/schemas/Frequency'
+        notes:
+          type: string
+          nullable: true
+
+    # --- Expense ---
+    Expense:
+      allOf:
+        - type: object
+          required: [id, category_id, amount, currency, expense_date]
+          properties:
+            id:
+              type: integer
+              readOnly: true
+            category_id:
+              type: integer
+            amount:
+              type: number
+              format: double
+              example: 3000.00
+            currency:
+              type: string
+              example: USD
+            expense_date:
+              type: string
+              format: date
+              example: "2025-03-01"
+            notes:
+              type: string
+              nullable: true
+        - $ref: '#/components/schemas/Timestamps'
+
+    ExpenseInput:
+      type: object
+      required: [category_id, amount, expense_date]
+      properties:
+        category_id:
+          type: integer
+        amount:
+          type: number
+          format: double
+          minimum: 0
+          example: 3000.00
+        currency:
+          type: string
+          default: USD
+          maxLength: 3
+        expense_date:
+          type: string
+          format: date
+          example: "2025-03-01"
+        notes:
+          type: string
+          nullable: true
+
+    ExpensePatch:
+      type: object
+      properties:
+        amount:
+          type: number
+          format: double
+          minimum: 0
+        currency:
+          type: string
+          maxLength: 3
+        expense_date:
+          type: string
+          format: date
+        notes:
+          type: string
+          nullable: true
+
+    # --- Summary / Report schemas ---
+    Dashboard:
+      type: object
+      properties:
+        total_assets:
+          type: number
+          format: double
+        account_count:
+          type: integer
+        us_monthly_total:
+          type: number
+          format: double
+        us_annual_total:
+          type: number
+          format: double
+        gobi_total:
+          type: number
+          format: double
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/SectionSummary'
+
+    SectionSummary:
+      type: object
+      properties:
+        section:
+          type: string
+        monthly_total:
+          type: number
+          format: double
+          nullable: true
+        annual_total:
+          type: number
+          format: double
+          nullable: true
+        one_time_total:
+          type: number
+          format: double
+          nullable: true
+        categories:
+          type: array
+          items:
+            type: object
+            properties:
+              category:
+                type: string
+              amount:
+                type: number
+                format: double
+              frequency:
+                $ref: '#/components/schemas/Frequency'
+
+    AccountSummary:
+      type: object
+      properties:
+        total_assets:
+          type: number
+          format: double
+        currency:
+          type: string
+        account_count:
+          type: integer
+        accounts:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              balance:
+                type: number
+                format: double
+              percentage:
+                type: number
+                format: double
+                description: Share of total assets (%)
+
+    ExpenseSummary:
+      type: object
+      properties:
+        period_from:
+          type: string
+          format: date
+        period_to:
+          type: string
+          format: date
+        grand_total:
+          type: number
+          format: double
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/SectionSummary'
+
+    MonthlyTrend:
+      type: object
+      properties:
+        month:
+          type: string
+          example: "2025-03"
+        section:
+          type: string
+          example: US
+        total:
+          type: number
+          format: double
+
+  # ── RESPONSES ───────────────────────────────────────────
+  responses:
+    BadRequest:
+      description: Invalid request payload
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: BAD_REQUEST
+            message: "amount must be a positive number"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: NOT_FOUND
+            message: "Resource with id 99 not found"
+
+    Conflict:
+      description: Resource already exists
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: CONFLICT
+            message: "An account named 'Wells' already exists"
+
+    InternalError:
+      description: Unexpected server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: INTERNAL_ERROR
+            message: "An unexpected error occurred"
